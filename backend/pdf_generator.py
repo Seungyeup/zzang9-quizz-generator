@@ -27,8 +27,13 @@ def _font_uri() -> str:
 
 
 def render_html(questions: list[dict], settings: dict, preview_mode: bool = False) -> str:
+    n = len(questions)
+    mid = (n + 1) // 2
     return _env.get_template("worksheet.html").render(
         questions=questions,
+        left_questions=questions[:mid],
+        right_questions=questions[mid:],
+        left_count=mid,
         settings=settings,
         font_path=_font_uri(),
         preview_mode=preview_mode,

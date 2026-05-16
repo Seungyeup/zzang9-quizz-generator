@@ -3,6 +3,18 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { useSelection } from '../context/SelectionContext'
 import { WorksheetModal } from './WorksheetModal'
 
+function DragHandle(props) {
+  return (
+    <div {...props} className="shrink-0 cursor-grab active:cursor-grabbing mt-0.5" style={{ color: '#d1d5db' }}>
+      <svg width="16" height="18" viewBox="0 0 16 18" fill="currentColor">
+        <circle cx="5" cy="3" r="1.5"/><circle cx="11" cy="3" r="1.5"/>
+        <circle cx="5" cy="9" r="1.5"/><circle cx="11" cy="9" r="1.5"/>
+        <circle cx="5" cy="15" r="1.5"/><circle cx="11" cy="15" r="1.5"/>
+      </svg>
+    </div>
+  )
+}
+
 function SelectedItem({ question, index, onRemove }) {
   return (
     <Draggable draggableId={String(question.id)} index={index}>
@@ -10,33 +22,39 @@ function SelectedItem({ question, index, onRemove }) {
         <div
           ref={provided.innerRef}
           {...provided.draggableProps}
-          className={`flex items-start gap-2 p-2.5 rounded-lg border bg-white text-sm transition-shadow
-            ${snapshot.isDragging ? 'shadow-lg border-blue-300' : 'border-slate-200 shadow-sm'}`}
+          className="flex items-start gap-4 px-5 py-5 rounded-2xl bg-white transition-all"
+          style={{
+            border: snapshot.isDragging ? '1.5px solid #818cf8' : '1.5px solid #edf0f7',
+            boxShadow: snapshot.isDragging
+              ? '0 12px 32px rgba(0,0,0,0.15)'
+              : '0 1px 4px rgba(0,0,0,0.04)',
+          }}
         >
-          {/* Drag handle */}
-          <span
-            {...provided.dragHandleProps}
-            className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing mt-0.5 shrink-0 select-none"
-            title="드래그하여 순서 변경"
-          >
-            ⣿
-          </span>
+          <DragHandle {...provided.dragHandleProps} />
 
-          {/* Content */}
           <div className="flex-1 min-w-0">
-            <span className="text-xs font-bold text-slate-500 mr-1">Q{question.question_no}</span>
-            <span className="text-slate-700 line-clamp-2 whitespace-pre-wrap leading-snug">
-              {question.content}
+            <span
+              className="inline-block text-xs font-bold px-2.5 py-1 rounded-lg mb-2.5"
+              style={{ background: '#f1f5f9', color: '#64748b' }}
+            >
+              {question.question_no}번
             </span>
+            <p className="text-sm text-gray-700 line-clamp-2 leading-6 whitespace-pre-wrap">
+              {question.content}
+            </p>
           </div>
 
-          {/* Remove */}
           <button
             onClick={() => onRemove(question.id)}
-            className="text-slate-300 hover:text-red-400 shrink-0 text-base leading-none mt-0.5"
+            className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg transition-all mt-0.5"
+            style={{ color: '#d1d5db' }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#f43f5e'; e.currentTarget.style.background = '#fff1f2' }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#d1d5db'; e.currentTarget.style.background = 'transparent' }}
             title="제거"
           >
-            ✕
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M1 1l9 9M10 1L1 10"/>
+            </svg>
           </button>
         </div>
       )}
@@ -54,41 +72,54 @@ export function SelectedPanel() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-200">
-        <h2 className="text-sm font-semibold text-slate-700">
-          선택된 문제{' '}
-          <span className="ml-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
-            {selected.length}
-          </span>
-        </h2>
+      <div className="shrink-0 px-10 py-8" style={{ borderBottom: '1px solid #edf0f7' }}>
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-gray-800 leading-tight">선택된 문제</h2>
+            <p className="text-sm text-gray-400 mt-1">
+              {selected.length > 0
+                ? `${selected.length}개 문제 선택됨 · 드래그로 순서 변경`
+                : '좌측에서 문제를 선택하세요'}
+            </p>
+          </div>
+          {selected.length > 0 && (
+            <button
+              onClick={clear}
+              className="text-sm text-gray-400 hover:text-red-400 transition-colors font-medium mt-0.5"
+            >
+              전체 삭제
+            </button>
+          )}
+        </div>
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto p-3">
+      <div className="flex-1 overflow-y-auto px-8 py-6">
         {selected.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-slate-400 text-sm gap-2">
-            <span className="text-3xl">📋</span>
-            <p>좌측 문제 카드를 클릭하여</p>
-            <p>문제를 추가하세요</p>
+          <div className="flex flex-col items-center justify-center h-full gap-5 py-20">
+            <div
+              className="w-20 h-20 rounded-3xl flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, #f0f4ff 0%, #faf5ff 100%)', border: '1.5px solid #e8ecf7' }}
+            >
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" strokeWidth="1.4" strokeLinecap="round">
+                <rect x="3" y="3" width="18" height="18" rx="3"/>
+                <path d="M8 10h8M8 14h5"/>
+              </svg>
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-semibold text-gray-500 mb-1.5">선택된 문제가 없습니다</p>
+              <p className="text-xs text-gray-400 leading-5">좌측 문제 카드를 클릭하면<br />이곳에 추가됩니다</p>
+            </div>
           </div>
         ) : (
           <DragDropContext onDragEnd={onDragEnd}>
             <Droppable droppableId="selected-questions">
               {(provided) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                  className="flex flex-col gap-2"
-                >
+                <div ref={provided.innerRef} {...provided.droppableProps} className="flex flex-col gap-3">
                   {selected.map((q, index) => (
-                    <SelectedItem
-                      key={q.id}
-                      question={q}
-                      index={index}
-                      onRemove={remove}
-                    />
+                    <SelectedItem key={q.id} question={q} index={index} onRemove={remove} />
                   ))}
                   {provided.placeholder}
                 </div>
@@ -98,21 +129,26 @@ export function SelectedPanel() {
         )}
       </div>
 
-      {/* Footer actions */}
-      <div className="p-3 border-t border-slate-200 flex gap-2">
-        <button
-          onClick={clear}
-          disabled={selected.length === 0}
-          className="flex-1 text-sm py-2 rounded-md border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          초기화
-        </button>
+      {/* Footer */}
+      <div className="shrink-0 px-8 py-6" style={{ borderTop: '1px solid #edf0f7' }}>
         <button
           onClick={() => setShowModal(true)}
           disabled={selected.length === 0}
-          className="flex-[2] text-sm py-2 rounded-md bg-green-600 text-white font-medium hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-3 rounded-2xl font-bold text-white transition-all hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed"
+          style={{
+            fontSize: '15px',
+            padding: '16px 24px',
+            background: selected.length > 0
+              ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+              : '#c7d0e8',
+            boxShadow: selected.length > 0 ? '0 6px 24px rgba(102,126,234,0.5)' : 'none',
+          }}
         >
-          → 문제지 만들기
+          <svg width="18" height="18" viewBox="0 0 17 17" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+            <rect x="1.5" y="1.5" width="14" height="14" rx="2"/>
+            <path d="M4.5 7h8M4.5 10h5"/>
+          </svg>
+          문제지 만들기
         </button>
       </div>
 
