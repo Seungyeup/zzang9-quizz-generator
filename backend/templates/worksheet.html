@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    @font-face {
+      font-family: 'NanumGothic';
+      src: url('{{ font_path }}') format('truetype');
+      font-weight: normal;
+    }
+    @font-face {
+      font-family: 'NanumGothic';
+      src: url('{{ font_path }}') format('truetype');
+      font-weight: bold;
+    }
+
+    @page {
+      size: A4;
+      margin: 18mm 20mm 20mm 20mm;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'NanumGothic', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.65;
+      color: #111;
+      {% if preview_mode %}
+      background: #fff;
+      max-width: 794px;
+      margin: 0 auto;
+      padding: 24mm 22mm;
+      {% endif %}
+    }
+
+    /* ── Header ── */
+    .doc-header {
+      margin-bottom: 10px;
+    }
+
+    .doc-title {
+      font-size: 17pt;
+      font-weight: bold;
+      text-align: center;
+      letter-spacing: -0.5px;
+      margin-bottom: 10px;
+    }
+
+    .doc-meta {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 18px;
+      font-size: 9.5pt;
+      color: #333;
+    }
+
+    .meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      white-space: nowrap;
+    }
+
+    .meta-blank {
+      display: inline-block;
+      border-bottom: 1px solid #555;
+      min-width: 40px;
+    }
+    .meta-blank.wide { min-width: 80px; }
+
+    .doc-divider {
+      border: none;
+      border-top: 2px solid #222;
+      margin: 8px 0 14px;
+    }
+
+    /* ── Questions ── */
+    .question {
+      margin-bottom: 20px;
+      page-break-inside: avoid;
+    }
+
+    .question-stem {
+      display: flex;
+      gap: 4px;
+      align-items: flex-start;
+      margin-bottom: 7px;
+      font-size: 10.5pt;
+    }
+
+    .question-no {
+      font-weight: bold;
+      flex-shrink: 0;
+      min-width: 20px;
+    }
+
+    .question-content {
+      white-space: pre-wrap;
+      word-break: break-word;
+      flex: 1;
+    }
+
+    /* ── Choices ── */
+    .choices {
+      margin-left: 24px;
+      margin-top: 5px;
+    }
+
+    /* 2-column grid for 5-choice MCQ */
+    .choices-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      column-gap: 12px;
+      row-gap: 2px;
+    }
+
+    /* single column when choices are long */
+    .choices-single {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .choice {
+      display: flex;
+      gap: 5px;
+      align-items: flex-start;
+      font-size: 10pt;
+    }
+
+    .choice-no {
+      font-weight: bold;
+      flex-shrink: 0;
+      min-width: 14px;
+    }
+
+    .choice-content {
+      word-break: break-word;
+      color: #222;
+    }
+
+    /* ── Answer Section ── */
+    .answer-section {
+      page-break-before: always;
+      margin-top: 4mm;
+    }
+
+    .answer-title {
+      font-size: 13pt;
+      font-weight: bold;
+      text-align: center;
+      letter-spacing: 2px;
+      margin-bottom: 14px;
+      padding-bottom: 6px;
+      border-bottom: 1.5px solid #333;
+    }
+
+    .answer-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 22px;
+      font-size: 10.5pt;
+    }
+
+    .answer-item {
+      white-space: nowrap;
+    }
+
+    .answer-item .ans-no { font-weight: bold; }
+    .answer-item .ans-val { color: #c00; }
+
+    /* ── Explanation Section ── */
+    .explanation-section {
+      margin-top: 18px;
+    }
+
+    .explanation-title {
+      font-size: 11pt;
+      font-weight: bold;
+      margin-bottom: 10px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #999;
+    }
+
+    .explanation-item {
+      margin-bottom: 10px;
+      page-break-inside: avoid;
+      font-size: 9.5pt;
+    }
+
+    .explanation-item .expl-no {
+      font-weight: bold;
+    }
+
+    .explanation-text {
+      color: #444;
+      margin-top: 2px;
+      white-space: pre-wrap;
+      padding-left: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Header ── -->
+  <div class="doc-header">
+    <div class="doc-title">{{ settings.title }}</div>
+    <div class="doc-meta">
+      {% if settings.school %}
+      <span class="meta-item">{{ settings.school }}</span>
+      {% else %}
+      <span class="meta-item">학교명: <span class="meta-blank wide"></span></span>
+      {% endif %}
+
+      {% if settings.grade %}
+      <span class="meta-item">{{ settings.grade }}학년</span>
+      {% else %}
+      <span class="meta-item">학년: <span class="meta-blank"></span></span>
+      {% endif %}
+
+      {% if settings.class_num %}
+      <span class="meta-item">{{ settings.class_num }}반</span>
+      {% else %}
+      <span class="meta-item">반: <span class="meta-blank"></span></span>
+      {% endif %}
+
+      <span class="meta-item">번호: <span class="meta-blank"></span></span>
+      <span class="meta-item">이름: <span class="meta-blank wide"></span></span>
+
+      {% if settings.date %}
+      <span class="meta-item">{{ settings.date }}</span>
+      {% endif %}
+    </div>
+  </div>
+  <hr class="doc-divider">
+
+  <!-- ── Questions ── -->
+  {% for q in questions %}
+  <div class="question">
+
+    <div class="question-stem">
+      <span class="question-no">{{ loop.index }}.</span>
+      <span class="question-content">{{ q.content }}</span>
+    </div>
+
+    {% if q.choices %}
+    {% set max_len = q.choices | map(attribute='content') | map('length') | max %}
+    <div class="choices">
+      {# Use 2-column grid when choices are short enough (≤ 22 chars each) #}
+      {% if max_len <= 22 and q.choices | length == 5 %}
+      <div class="choices-grid">
+        {% for c in q.choices %}
+        <div class="choice">
+          <span class="choice-no">{{ c.choice_no }}</span>
+          <span class="choice-content">{{ c.content }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="choices-single">
+        {% for c in q.choices %}
+        <div class="choice">
+          <span class="choice-no">{{ c.choice_no }}</span>
+          <span class="choice-content">{{ c.content }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+  {% endfor %}
+
+  <!-- ── Answer Table ── -->
+  {% if settings.show_answers %}
+  <div class="answer-section">
+    <div class="answer-title">◀ 정 답 ▶</div>
+    <div class="answer-grid">
+      {% for q in questions %}
+      {% if q.answer %}
+      <span class="answer-item">
+        <span class="ans-no">{{ loop.index }}.</span>
+        <span class="ans-val"> {{ q.answer }}</span>
+      </span>
+      {% endif %}
+      {% endfor %}
+    </div>
+
+    <!-- ── Explanations ── -->
+    {% if settings.show_explanation %}
+    <div class="explanation-section">
+      <div class="explanation-title">해 설</div>
+      {% for q in questions %}
+      {% if q.explanation %}
+      <div class="explanation-item">
+        <span class="expl-no">{{ loop.index }}.</span>
+        <div class="explanation-text">{{ q.explanation }}</div>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</body>
+</html>
