@@ -1,7 +1,8 @@
-import { useState, useRef } from 'react'
+import { useRef, useState } from 'react'
 import { uploadFile, fetchJobStatus } from '../api'
+import { SVG_ICONS } from './ui'
 
-export function UploadModal({ onClose, onSuccess }) {
+export function UploadModal({ k, onClose, onSuccess }) {
   const [file, setFile] = useState(null)
   const [subject, setSubject] = useState('')
   const [status, setStatus] = useState(null)
@@ -24,7 +25,7 @@ export function UploadModal({ onClose, onSuccess }) {
           if (s.status === 'done') {
             clearInterval(pollRef.current)
             setStatus('done')
-            setTimeout(() => onSuccess?.(), 1200)
+            setTimeout(() => onSuccess?.(), 900)
           } else if (s.status === 'error') {
             clearInterval(pollRef.current)
             setStatus('error')
@@ -42,138 +43,177 @@ export function UploadModal({ onClose, onSuccess }) {
   }
 
   function handleFileChange(e) {
-    setFile(e.target.files[0] ?? null)
+    setFile(e.target.files?.[0] ?? null)
     setStatus(null)
     setMessage('')
   }
 
   const isDone = status === 'done'
   const isError = status === 'error'
-  const isProcessing = status === 'uploading' || status === 'processing'
+  const disabled = !file || !!status
+
+  const statusColors = isError
+    ? { bg: '#fef2f2', border: '#fecaca', fg: k.danger }
+    : isDone
+    ? { bg: '#ecfdf5', border: '#a7f3d0', fg: k.success }
+    : { bg: k.sub, border: k.border, fg: k.textMid }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-6"
-      style={{ background: 'rgba(15,20,40,0.55)', backdropFilter: 'blur(6px)' }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 60,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'rgba(15, 23, 42, 0.45)',
+      }}
     >
-      <div className="bg-white w-full max-w-md overflow-hidden" style={{ borderRadius: '24px', boxShadow: '0 24px 64px rgba(0,0,0,0.25)' }}>
-
-        {/* Header */}
-        <div className="flex items-center justify-between px-8 py-7" style={{ borderBottom: '1px solid #f0f2f7' }}>
-          <div>
-            <h2 className="text-base font-bold text-gray-800">파일 업로드</h2>
-            <p className="text-sm text-gray-400 mt-1">.hwp · .hwpx · .json 형식 지원</p>
+      <div
+        style={{
+          width: 440,
+          maxWidth: '92vw',
+          background: k.panel,
+          color: k.text,
+          borderRadius: 10,
+          border: `1px solid ${k.border}`,
+          boxShadow: '0 20px 50px -10px rgba(15, 23, 42, 0.25)',
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          style={{
+            padding: '16px 20px',
+            borderBottom: `1px solid ${k.border}`,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+          }}
+        >
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 700 }}>파일 업로드</div>
+            <div style={{ fontSize: 11.5, color: k.textDim, marginTop: 2 }}>
+              .hwp · .hwpx · .json 형식 지원
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="w-9 h-9 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-600 transition-colors"
-            style={{ border: '1.5px solid #e8ecf0' }}
-            onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
-            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            style={{
+              width: 28,
+              height: 28,
+              border: `1px solid ${k.border}`,
+              background: k.panel,
+              borderRadius: 6,
+              color: k.textMid,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
           >
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M1 1l11 11M12 1L1 12"/>
-            </svg>
+            {SVG_ICONS.x}
           </button>
         </div>
 
-        <div className="px-8 py-7 flex flex-col gap-6">
-
-          {/* Drop zone */}
+        <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div
             onClick={() => fileRef.current?.click()}
-            className="rounded-2xl p-10 text-center cursor-pointer transition-all"
             style={{
-              border: `2px dashed ${file ? '#818cf8' : '#dde2ee'}`,
-              background: file ? '#f5f3ff' : '#fafbfd',
+              padding: 28,
+              textAlign: 'center',
+              cursor: 'pointer',
+              border: `1.5px dashed ${file ? k.primary : k.borderStrong}`,
+              background: file ? k.primaryTint : k.sub,
+              borderRadius: 8,
+              transition: 'border-color .15s, background .15s',
             }}
-            onMouseEnter={e => { if (!file) { e.currentTarget.style.borderColor = '#a5b4fc'; e.currentTarget.style.background = '#f8f9ff' } }}
-            onMouseLeave={e => { if (!file) { e.currentTarget.style.borderColor = '#dde2ee'; e.currentTarget.style.background = '#fafbfd' } }}
           >
             {file ? (
-              <div className="flex flex-col items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: '#ede9fe' }}>
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="1.8" strokeLinecap="round">
-                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-                    <polyline points="14,2 14,8 20,8"/>
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-sm font-bold" style={{ color: '#6d28d9' }}>{file.name}</p>
-                  <p className="text-xs text-gray-400 mt-1">클릭하여 다른 파일 선택</p>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: k.primaryDark }}>{file.name}</div>
+                <div style={{ fontSize: 11, color: k.textDim, marginTop: 4 }}>
+                  클릭하여 다른 파일 선택
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: '#f1f5f9' }}>
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8" strokeLinecap="round">
-                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-600">클릭하여 파일 선택</p>
-                  <p className="text-xs text-gray-400 mt-1">.hwp · .hwpx · .json</p>
-                </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: k.text }}>클릭하여 파일을 선택하세요</div>
+                <div style={{ fontSize: 11, color: k.textDim, marginTop: 4 }}>.hwp · .hwpx · .json</div>
               </div>
             )}
-            <input ref={fileRef} type="file" accept=".hwp,.hwpx,.json" className="hidden" onChange={handleFileChange} />
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".hwp,.hwpx,.json"
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+            />
           </div>
 
-          {/* Subject */}
-          <input
-            type="text"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            placeholder="과목명 (선택 사항)"
-            className="w-full text-sm rounded-xl px-5 py-3.5 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            style={{ border: '1.5px solid #e2e8f0', background: '#fafbfc' }}
-          />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: 11, color: k.textMid, fontWeight: 500 }}>
+              과목명 <span style={{ color: k.textDim }}>(선택)</span>
+            </label>
+            <input
+              type="text"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="예: 사회 / 과학 / 수학"
+              style={{
+                padding: '8px 10px',
+                border: `1px solid ${k.border}`,
+                borderRadius: 6,
+                background: k.panel,
+                fontSize: 13,
+                outline: 'none',
+                color: k.text,
+              }}
+            />
+          </div>
 
-          {/* Status */}
           {message && (
             <div
-              className="flex items-center gap-4 text-sm px-5 py-4 rounded-xl font-semibold"
               style={{
-                background: isError ? '#fff1f2' : isDone ? '#f0fdf4' : '#f5f3ff',
-                color: isError ? '#e11d48' : isDone ? '#16a34a' : '#6d28d9',
-                border: `1px solid ${isError ? '#fecdd3' : isDone ? '#bbf7d0' : '#ddd6fe'}`,
+                fontSize: 12.5,
+                padding: '10px 12px',
+                borderRadius: 6,
+                background: statusColors.bg,
+                color: statusColors.fg,
+                border: `1px solid ${statusColors.border}`,
               }}
             >
-              {isProcessing && (
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="animate-spin shrink-0">
-                  <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.1 3.1l1.4 1.4M11.5 11.5l1.4 1.4M3.1 12.9l1.4-1.4M11.5 4.5l1.4-1.4"/>
-                </svg>
-              )}
-              {isDone && (
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="shrink-0">
-                  <path d="M2 8l5 5 8-9"/>
-                </svg>
-              )}
-              {isError && (
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0">
-                  <circle cx="8" cy="8" r="7"/><path d="M8 5v3M8 11v.5"/>
-                </svg>
-              )}
               {message}
             </div>
           )}
 
-          {/* Actions */}
-          <div className="flex gap-3 pt-1">
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
             <button
               onClick={onClose}
-              className="flex-1 rounded-xl font-semibold text-gray-500 hover:bg-gray-50 transition-colors"
-              style={{ fontSize: '14px', padding: '14px 20px' }}
-              style={{ border: '1.5px solid #e2e8f0' }}
+              style={{
+                padding: '8px 14px',
+                border: `1px solid ${k.border}`,
+                background: k.panel,
+                color: k.text,
+                borderRadius: 6,
+                fontSize: 13,
+                fontWeight: 500,
+              }}
             >
               취소
             </button>
             <button
               onClick={handleUpload}
-              disabled={!file || !!status}
-              className="flex-[2] rounded-xl font-bold text-white transition-opacity hover:opacity-90 active:opacity-75 disabled:opacity-35 disabled:cursor-not-allowed"
-              style={{ fontSize: '14px', padding: '14px 20px' }}
-              style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', boxShadow: '0 4px 16px rgba(102,126,234,0.4)' }}
+              disabled={disabled}
+              style={{
+                padding: '8px 14px',
+                border: 'none',
+                background: disabled ? k.borderStrong : k.primary,
+                color: 'white',
+                borderRadius: 6,
+                fontSize: 13,
+                fontWeight: 600,
+                opacity: disabled ? 0.7 : 1,
+              }}
             >
               업로드
             </button>

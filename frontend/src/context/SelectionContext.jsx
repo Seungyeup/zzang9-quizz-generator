@@ -1,37 +1,38 @@
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useCallback, useContext, useState } from 'react'
 
 const SelectionContext = createContext(null)
 
 export function SelectionProvider({ children }) {
-  const [selected, setSelected] = useState([]) // array of full question objects
+  // Selected items keep the full question object so the preview / dock can
+  // render without re-fetching as the user scrolls past pages.
+  const [items, setItems] = useState([])
 
-  const toggle = useCallback((question) => {
-    setSelected((prev) => {
-      const exists = prev.some((q) => q.id === question.id)
-      if (exists) return prev.filter((q) => q.id !== question.id)
-      return [...prev, question]
+  const toggle = useCallback((q) => {
+    setItems((prev) => {
+      const i = prev.findIndex((x) => x.id === q.id)
+      if (i >= 0) return prev.filter((_, idx) => idx !== i)
+      return [...prev, q]
     })
   }, [])
 
   const remove = useCallback((id) => {
-    setSelected((prev) => prev.filter((q) => q.id !== id))
+    setItems((prev) => prev.filter((q) => q.id !== id))
   }, [])
 
-  const reorder = useCallback((sourceIndex, destIndex) => {
-    setSelected((prev) => {
-      const next = [...prev]
-      const [item] = next.splice(sourceIndex, 1)
-      next.splice(destIndex, 0, item)
+  const reorder = useCallback((from, to) => {
+    setItems((prev) => {
+      const next = prev.slice()
+      const [m] = next.splice(from, 1)
+      next.splice(to, 0, m)
       return next
     })
   }, [])
 
-  const clear = useCallback(() => setSelected([]), [])
-
-  const isSelected = useCallback((id) => selected.some((q) => q.id === id), [selected])
+  const clear = useCallback(() => setItems([]), [])
+  const isSelected = useCallback((id) => items.some((q) => q.id === id), [items])
 
   return (
-    <SelectionContext.Provider value={{ selected, toggle, remove, reorder, clear, isSelected }}>
+    <SelectionContext.Provider value={{ items, toggle, remove, reorder, clear, isSelected }}>
       {children}
     </SelectionContext.Provider>
   )

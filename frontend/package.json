@@ -1,6 +1,6 @@
 {
-  "name": "quizcraft-frontend",
-  "version": "1.0.0",
+  "name": "9zzang-builder-frontend",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,13 +10,10 @@
   },
   "dependencies": {
     "react": "^19.2.6",
-    "react-dom": "^19.2.6",
-    "react-beautiful-dnd": "^13.1.1"
+    "react-dom": "^19.2.6"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.3.0",
     "@vitejs/plugin-react": "^6.0.1",
-    "tailwindcss": "^4.3.0",
     "vite": "^8.0.12"
   }
 }

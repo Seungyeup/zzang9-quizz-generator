@@ -1,14 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { fetchSources } from '../api'
 
-export function useSources() {
+export function useSources(refreshKey = 0) {
   const [sources, setSources] = useState([])
-
   useEffect(() => {
-    fetch('/api/sources')
-      .then((r) => r.json())
-      .then(setSources)
-      .catch(() => {})
-  }, [])
-
+    let alive = true
+    fetchSources().then((d) => alive && setSources(d)).catch(() => {})
+    return () => { alive = false }
+  }, [refreshKey])
   return sources
 }

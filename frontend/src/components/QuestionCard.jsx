@@ -1,225 +1,196 @@
-import { useState, useEffect } from 'react'
-import { useSelection } from '../context/SelectionContext'
+import { useState } from 'react'
+import { Checkbox, Pill } from './ui'
 import { fetchQuestion } from '../api'
 
-const DIFFICULTY_STYLE = {
-  '상': { bg: '#fff1f2', color: '#e11d48', border: '#fecdd3' },
-  '중': { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
-  '하': { bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' },
+function subjectTone(subject) {
+  if (subject === '사회') return 'amber'
+  if (subject === '과학') return 'blue'
+  return 'slate'
 }
 
-function Checkbox({ checked }) {
-  return (
-    <div
-      className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-all"
-      style={{
-        border: checked ? 'none' : '2px solid #d1d5db',
-        background: checked ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#fff',
-        boxShadow: checked ? '0 2px 8px rgba(102,126,234,0.4)' : 'none',
-      }}
-    >
-      {checked && (
-        <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-          <path d="M1 4l3 3L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      )}
-    </div>
-  )
+function splitContent(content) {
+  // First line = prompt (발문, the question itself).
+  // Remaining lines = passage (지문, supporting context).
+  const lines = (content || '').split('\n').map((l) => l.trim()).filter(Boolean)
+  if (lines.length === 0) return { passage: '', prompt: '' }
+  if (lines.length === 1) return { passage: '', prompt: lines[0] }
+  return { prompt: lines[0], passage: lines.slice(1).join('\n') }
 }
 
-function PassageBox({ text }) {
-  return (
-    <div
-      className="mt-3 mb-1 text-sm leading-7 whitespace-pre-wrap"
-      style={{
-        border: '1px solid #b0b8c8',
-        borderRadius: '6px',
-        padding: '10px 14px',
-        background: '#f7f8fa',
-        color: '#374151',
-        fontFamily: 'inherit',
-      }}
-    >
-      {text}
-    </div>
-  )
-}
-
-export function QuestionCard({ question }) {
-  const { toggle, isSelected } = useSelection()
-  const [showAnswer, setShowAnswer] = useState(false)
-  const [showExpl, setShowExpl] = useState(false)
+export function QuestionCard({ q, selected, onToggle, k, density, expanded, onExpand }) {
   const [detail, setDetail] = useState(null)
-  const [loading, setLoading] = useState(false)
+  const [loadingDetail, setLoadingDetail] = useState(false)
 
-  const selected = isSelected(question.id)
-  const displayQ = detail ?? question
-  const choices = detail?.choices ?? []
-  const diffStyle = DIFFICULTY_STYLE[question.difficulty]
-
-  // 카드 마운트 시 즉시 detail(선택지 포함) 로드
-  useEffect(() => {
-    fetchQuestion(question.id).then(setDetail)
-  }, [question.id])
-
-  // Split content into question stem + passage
-  const contentLines = displayQ.content?.split('\n') ?? []
-  const stem = contentLines[0] ?? ''
-  const passage = contentLines.slice(1).join('\n').trim()
-  const hasPassage = passage.length > 3
-
-  async function ensureDetail() {
+  const ensureDetail = async () => {
     if (detail) return detail
-    setLoading(true)
+    setLoadingDetail(true)
     try {
-      const data = await fetchQuestion(question.id)
-      setDetail(data)
-      return data
+      const d = await fetchQuestion(q.id)
+      setDetail(d)
+      return d
     } finally {
-      setLoading(false)
+      setLoadingDetail(false)
     }
   }
 
-  async function handleToggleAnswer(e) {
-    e.stopPropagation()
-    await ensureDetail()
-    setShowAnswer((v) => !v)
+  const handleToggle = async () => {
+    const full = await ensureDetail()
+    onToggle(full)
   }
 
-  async function handleToggleExpl(e) {
+  const handleExpand = async (e) => {
     e.stopPropagation()
-    await ensureDetail()
-    setShowExpl((v) => !v)
+    if (!expanded) await ensureDetail()
+    onExpand()
   }
 
-  function handleCardClick() {
-    toggle(detail ?? question)
-  }
+  const type = (q.choice_count ?? 0) > 0 ? '객관식' : '주관식'
+  const { passage, prompt } = splitContent(q.content)
+  const subject = q.source_subject
 
   return (
     <div
-      className="rounded-2xl bg-white cursor-pointer select-none transition-all duration-150"
+      onClick={handleToggle}
       style={{
-        border: selected ? '1.5px solid #818cf8' : '1.5px solid #edf0f7',
-        boxShadow: selected
-          ? '0 0 0 4px rgba(129,140,248,0.12), 0 4px 16px rgba(0,0,0,0.06)'
-          : '0 2px 8px rgba(0,0,0,0.04)',
+        display: 'flex',
+        gap: 12,
+        padding: k.rowPad,
+        background: selected ? k.primaryTint : k.panel,
+        borderBottom: `1px solid ${k.borderSoft}`,
+        borderLeft: `3px solid ${selected ? k.primary : 'transparent'}`,
+        cursor: 'pointer',
+        transition: 'background .1s',
+        position: 'relative',
       }}
     >
-      {/* Header — px-7 pt-7: checkbox(20)+gap(16)=36px → text starts at 7*4+36=64px */}
-      <div className="flex items-start gap-4 px-7 pt-7 pb-3" onClick={handleCardClick}>
-        <div className="mt-0.5 shrink-0">
-          <Checkbox checked={selected} />
-        </div>
+      <Checkbox checked={selected} onChange={handleToggle} k={k} />
 
-        <div className="flex-1 min-w-0">
-          {/* Badges */}
-          <div className="flex items-center gap-2 mb-3">
-            <span
-              className="text-xs font-bold px-2.5 py-1 rounded-lg"
-              style={selected
-                ? { background: '#ede9fe', color: '#6d28d9' }
-                : { background: '#f1f5f9', color: '#64748b' }
-              }
-            >
-              {question.question_no}번
-            </span>
-            {question.difficulty && diffStyle && (
-              <span
-                className="text-xs font-semibold px-2.5 py-1 rounded-lg"
-                style={{ background: diffStyle.bg, color: diffStyle.color, border: `1px solid ${diffStyle.border}` }}
-              >
-                {question.difficulty}
-              </span>
-            )}
-            {question.unit && (
-              <span className="text-xs text-gray-400 font-medium">{question.unit}</span>
-            )}
-          </div>
-
-          {/* Question stem */}
-          <p className="text-sm text-gray-800 leading-7 whitespace-pre-wrap">
-            {stem}
-          </p>
-
-          {/* Passage box */}
-          {hasPassage && <PassageBox text={passage} />}
-        </div>
-      </div>
-
-      {/* Choices — left-aligned with question text (px-7 + checkbox 20px + gap 16px = 64px) */}
-      {choices.length > 0 && (
-        <div className="pb-5 pt-2 pr-7" style={{ paddingLeft: '64px' }}>
-          <div className="rounded-xl px-4 py-4 flex flex-col gap-2.5" style={{ background: '#f8fafc', border: '1px solid #edf0f7' }}>
-            {choices.map((c) => (
-              <div key={c.id ?? c.choice_no} className="flex gap-3 text-sm text-gray-600">
-                <span className="font-semibold text-gray-400 shrink-0">{c.choice_no}</span>
-                <span className="leading-6">{c.content}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Footer */}
-      {question.answer && (
-        <div
-          className="flex items-center gap-3"
-          style={{ paddingLeft: '64px', paddingRight: '28px', paddingTop: '14px', paddingBottom: '14px', borderTop: '1px solid #f1f5f9' }}
-        >
-          <button
-            onClick={handleToggleAnswer}
-            className="text-sm font-semibold rounded-xl transition-all"
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, flexWrap: 'wrap' }}>
+          <span
             style={{
-              padding: '8px 18px',
-              ...(showAnswer
-                ? { background: '#ede9fe', color: '#6d28d9', border: '1.5px solid #c4b5fd' }
-                : { background: '#f4f6f9', color: '#64748b', border: '1.5px solid #e2e8f0' })
+              fontSize: 11,
+              fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+              color: k.textDim,
             }}
           >
-            {showAnswer ? '정답 숨기기' : '정답 보기'}
-          </button>
-          {detail?.explanation && (
-            <button
-              onClick={handleToggleExpl}
-              className="text-sm font-semibold rounded-xl transition-all"
+            Q-{String(q.id).padStart(4, '0')}
+          </span>
+          {subject && <Pill tone={subjectTone(subject)}>{subject}</Pill>}
+          <Pill tone={type === '객관식' ? 'slate' : 'green'}>{type}</Pill>
+          {(q.image_count ?? 0) > 0 && (
+            <span
+              title={`자료 ${q.image_count}개`}
               style={{
-                padding: '8px 18px',
-                ...(showExpl
-                  ? { background: '#ede9fe', color: '#6d28d9', border: '1.5px solid #c4b5fd' }
-                  : { background: '#f4f6f9', color: '#64748b', border: '1.5px solid #e2e8f0' })
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 2,
+                fontSize: 11,
+                color: k.textMid,
               }}
             >
-              {showExpl ? '해설 접기' : '해설 보기'}
-            </button>
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <rect x="2" y="3" width="12" height="10" rx="1.5" />
+                <circle cx="6" cy="7" r="1.2" />
+                <path d="M14 11l-3-3-3 2-2-1.5L2 11" />
+              </svg>
+              {q.image_count}
+            </span>
           )}
-          {loading && <span className="text-xs text-gray-300 ml-auto animate-pulse">로딩…</span>}
+          <div style={{ flex: 1 }} />
         </div>
-      )}
 
-      {/* Answer reveal */}
-      {showAnswer && displayQ.answer && (
-        <div style={{ paddingLeft: '64px', paddingRight: '28px', paddingBottom: '20px' }}>
-          <span
-            className="inline-flex items-center gap-2 text-sm font-bold px-4 py-2 rounded-xl"
-            style={{ background: '#ede9fe', color: '#6d28d9' }}
-          >
-            정답 <strong className="text-base">{displayQ.answer}</strong>
-          </span>
+        <div
+          style={{
+            fontSize: 13,
+            color: k.text,
+            lineHeight: 1.5,
+            display: expanded ? 'block' : '-webkit-box',
+            WebkitLineClamp: density === 'S' ? 1 : 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            marginBottom: 6,
+            whiteSpace: expanded ? 'pre-wrap' : 'normal',
+          }}
+        >
+          {prompt || passage}
         </div>
-      )}
 
-      {/* Explanation reveal */}
-      {showExpl && displayQ.explanation && (
-        <div style={{ paddingLeft: '64px', paddingRight: '28px', paddingBottom: '24px' }}>
+        {expanded && passage && (
           <div
-            className="text-sm text-gray-600 rounded-xl px-5 py-4 leading-7 whitespace-pre-wrap"
-            style={{ background: '#f8fafc', border: '1px solid #edf0f7' }}
+            style={{
+              padding: '8px 10px',
+              marginBottom: 6,
+              background: k.sub,
+              borderRadius: 6,
+              border: `1px solid ${k.borderSoft}`,
+              fontSize: 12,
+              color: k.textMid,
+              lineHeight: 1.6,
+              whiteSpace: 'pre-wrap',
+            }}
           >
-            {displayQ.explanation}
+            {passage}
           </div>
+        )}
+
+        {expanded && detail?.images?.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 6 }}>
+            {detail.images.map((img) => (
+              <img
+                key={img.id}
+                src={`/api/images/${img.filename}`}
+                alt=""
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: 220,
+                  objectFit: 'contain',
+                  borderRadius: 4,
+                  border: `1px solid ${k.borderSoft}`,
+                  background: k.panel,
+                }}
+              />
+            ))}
+          </div>
+        )}
+
+        {expanded && (
+          <div style={{ marginBottom: 6 }}>
+            {detail?.choices?.length > 0 ? (
+              <div style={{ fontSize: 11.5, color: k.textMid, lineHeight: 1.6 }}>
+                {detail.choices.map((c, i) => (
+                  <div key={i}>{c.choice_no} {c.content}</div>
+                ))}
+              </div>
+            ) : loadingDetail ? (
+              <div style={{ fontSize: 11, color: k.textDim, fontStyle: 'italic' }}>불러오는 중…</div>
+            ) : (
+              <div style={{ fontSize: 11, color: k.textDim, fontStyle: 'italic' }}>
+                (주관식 — 답안 작성 영역)
+              </div>
+            )}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 11, color: k.textMid }}>
+          <span>{q.source_filename || '출처 미상'}</span>
+          {q.answer && <span style={{ color: k.textDim }}>정답 {q.answer}</span>}
+          <div style={{ flex: 1 }} />
+          <button
+            onClick={handleExpand}
+            style={{
+              border: 'none',
+              background: 'transparent',
+              color: k.primary,
+              fontSize: 11,
+              fontWeight: 500,
+              padding: 0,
+            }}
+          >
+            {expanded ? '접기 ▴' : '자세히 ▾'}
+          </button>
         </div>
-      )}
+      </div>
     </div>
   )
 }

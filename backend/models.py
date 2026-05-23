@@ -1,5 +1,5 @@
 """
-Database engine, ORM models, and Pydantic schemas — all in one place.
+Database engine, ORM models, and Pydantic schemas.
 """
 from __future__ import annotations
 
@@ -8,14 +8,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
-from pydantic import BaseModel
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text, func, select
+from pydantic import BaseModel, Field
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, relationship, sessionmaker
 
 # ── Database setup ────────────────────────────────────────────────────────────
-# DB_PATH env var lets Docker Compose point to a persistent volume.
-# Defaults to quiz.db in the same directory as this file for local dev.
 _db_file = os.environ.get("DB_PATH", str(Path(__file__).parent / "quiz.db"))
 DATABASE_URL = f"sqlite+aiosqlite:///{_db_file}"
 
@@ -54,8 +52,6 @@ class Question(Base):
     content = Column(Text)
     answer = Column(String)
     explanation = Column(Text)
-    difficulty = Column(String)
-    unit = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     source = relationship("Source", back_populates="questions")
@@ -64,6 +60,12 @@ class Question(Base):
         back_populates="question",
         cascade="all, delete-orphan",
         order_by="Choice.id",
+    )
+    images = relationship(
+        "Image",
+        back_populates="question",
+        cascade="all, delete-orphan",
+        order_by="Image.position",
     )
 
 
@@ -78,6 +80,21 @@ class Choice(Base):
     question = relationship("Question", back_populates="choices")
 
 
+class Image(Base):
+    """An image (chart, table, photograph) embedded in a question.
+    Binary data is stored on disk under static/images/<filename>; the row only
+    tracks the link + display order within its question."""
+    __tablename__ = "images"
+
+    id = Column(Integer, primary_key=True, index=True)
+    question_id = Column(Integer, ForeignKey("questions.id"), nullable=False)
+    position = Column(Integer, default=0)
+    filename = Column(String, nullable=False)
+    mime_type = Column(String)
+
+    question = relationship("Question", back_populates="images")
+
+
 # ── Pydantic schemas ──────────────────────────────────────────────────────────
 
 class ChoiceOut(BaseModel):
@@ -87,29 +104,39 @@ class ChoiceOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ImageOut(BaseModel):
+    id: int
+    position: int = 0
+    filename: str
+    mime_type: Optional[str] = None
+    model_config = {"from_attributes": True}
+
+
 class QuestionListItem(BaseModel):
+    """Slim payload used by the question library list view."""
     id: int
     source_id: int
+    source_filename: Optional[str] = None
+    source_subject: Optional[str] = None
     question_no: str
     content: str
     answer: Optional[str] = None
-    difficulty: Optional[str] = None
-    unit: Optional[str] = None
-    model_config = {"from_attributes": True}
+    choice_count: int = 0
+    image_count: int = 0
 
 
 class QuestionOut(BaseModel):
     id: int
     source_id: int
+    source_filename: Optional[str] = None
+    source_subject: Optional[str] = None
     question_no: str
     content: str
     answer: Optional[str] = None
     explanation: Optional[str] = None
-    difficulty: Optional[str] = None
-    unit: Optional[str] = None
     created_at: datetime
     choices: List[ChoiceOut] = []
-    model_config = {"from_attributes": True}
+    images: List[ImageOut] = []
 
 
 class SourceOut(BaseModel):
@@ -117,7 +144,20 @@ class SourceOut(BaseModel):
     filename: str
     subject: Optional[str] = None
     uploaded_at: datetime
-    model_config = {"from_attributes": True}
+    question_count: int = 0
+
+
+class FacetItem(BaseModel):
+    value: str
+    count: int
+
+
+class QuestionFacets(BaseModel):
+    """Pre-aggregated counts for the filter sidebar."""
+    total: int
+    subjects: List[FacetItem]
+    sources: List[FacetItem]
+    types: List[FacetItem]   # 객관식 / 주관식 (derived from choice count)
 
 
 class UploadResponse(BaseModel):
@@ -142,20 +182,18 @@ class PaginatedQuestions(BaseModel):
 
 
 class WorksheetSettings(BaseModel):
-    title: str = "문제지"
+    """Mirrors the editable meta of the design's A4 preview."""
+    title: str = "시험지"
     school: str = ""
+    subject: str = ""
     grade: str = ""
-    class_num: str = ""
     date: str = ""
-    show_answers: bool = True
-    show_explanation: bool = False
+    session: str = "1"
+    columns: int = Field(default=1, ge=1, le=2)
+    watermark: bool = False
+    sheet_type: str = "question"  # question | answer | explain
 
 
-class WorksheetPreviewRequest(BaseModel):
-    question_ids: List[int]
-    settings: WorksheetSettings = WorksheetSettings()
-
-
-class WorksheetPDFRequest(BaseModel):
+class WorksheetRequest(BaseModel):
     question_ids: List[int]
     settings: WorksheetSettings = WorksheetSettings()

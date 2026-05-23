@@ -9,9 +9,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgdk-pixbuf-2.0-0 \
     libffi8 \
     shared-mime-info \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+
+# Bundle the Korean serif font into the image so PDF generation never needs network at runtime.
+RUN mkdir -p /app/static/fonts \
+    && curl -sL -o /app/static/fonts/NanumMyeongjo-Regular.ttf \
+        https://github.com/google/fonts/raw/main/ofl/nanummyeongjo/NanumMyeongjo-Regular.ttf
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

@@ -3,342 +3,367 @@
 <head>
 <meta charset="UTF-8">
 <style>
+  {% if font_path %}
   @font-face {
-    font-family: 'NanumGothic';
+    font-family: 'PaperSerif';
     src: url('{{ font_path }}') format('truetype');
   }
+  {% endif %}
 
   @page {
     size: A4;
-    margin: 16mm 14mm 18mm 14mm;
+    margin: 16mm 14mm 16mm 14mm;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    font-family: 'NanumGothic', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    font-family: 'PaperSerif', 'Noto Serif KR', 'Nanum Myeongjo', serif;
     font-size: 10pt;
     line-height: 1.6;
-    color: #111;
+    color: #1f1f1f;
+    background: #fbfaf7;
     {% if preview_mode %}
     max-width: 794px;
     margin: 0 auto;
-    padding: 16mm 14mm 18mm 14mm;
+    padding: 16mm 14mm;
     {% endif %}
   }
 
   /* ── Header ── */
-  .doc-title {
-    font-size: 16pt;
-    font-weight: bold;
+  .paper-school {
     text-align: center;
-    letter-spacing: -0.5px;
-    margin-bottom: 8px;
-  }
-
-  .doc-meta {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 16px;
     font-size: 9pt;
-    color: #333;
+    letter-spacing: 4px;
+    color: #737373;
+    margin-bottom: 6px;
   }
 
-  .meta-blank {
-    display: inline-block;
-    border-bottom: 1px solid #555;
-    min-width: 36px;
-  }
-  .meta-blank.wide { min-width: 72px; }
-
-  .doc-divider {
-    border: none;
-    border-top: 2px solid #111;
-    margin: 7px 0 10px;
+  .paper-title {
+    text-align: center;
+    font-size: 21pt;
+    font-weight: 700;
+    letter-spacing: -0.5pt;
+    color: #1f1f1f;
+    margin-bottom: 4px;
   }
 
-  /* ── 2-column layout ── */
-  .two-col-table {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
+  .paper-title .subtitle {
+    margin-left: 10pt;
+    color: #b1342a;
+    letter-spacing: 6pt;
+    font-weight: 700;
   }
 
-  .col-left {
-    width: 50%;
-    vertical-align: top;
-    padding-right: 5mm;
-  }
-
-  .col-right {
-    width: 50%;
-    vertical-align: top;
-    padding-left: 5mm;
-    border-left: 0.5pt solid #aaa;
-  }
-
-  /* ── Question block ── */
-  .question {
+  .paper-sub {
+    text-align: center;
+    font-size: 10.5pt;
+    color: #525252;
     margin-bottom: 14px;
-    page-break-inside: avoid;
   }
 
-  .question-stem {
+  .paper-meta {
     display: flex;
-    gap: 4px;
-    align-items: flex-start;
+    justify-content: space-between;
     font-size: 10pt;
-    font-weight: bold;
+    color: #525252;
+    border-top: 1.5pt solid #1f1f1f;
+    border-bottom: 0.5pt solid #1f1f1f;
+    padding: 5px 0;
+    margin-bottom: 16px;
   }
 
-  .question-no {
-    flex-shrink: 0;
-    min-width: 18px;
+  /* ── Question column ── */
+  .columns {
+    column-count: {{ settings.columns }};
+    column-gap: 9mm;
+  }
+  {% if settings.columns == 2 %}
+  .columns { column-rule: 0.5pt solid #d4d4d4; }
+  {% endif %}
+
+  .question {
+    break-inside: avoid;
+    margin-bottom: 14px;
   }
 
-  .question-text {
-    font-weight: normal;
-    word-break: break-word;
-    flex: 1;
-  }
-
-  /* ── Passage (지문) box ── */
-  .passage-box {
-    margin: 6px 0 6px 22px;
-    border: 1px solid #555;
-    border-radius: 1px;
-    padding: 6px 10px;
-    background: #fafafa;
-    font-size: 9.5pt;
-    line-height: 1.65;
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-
-  /* ── Choices ── */
-  .choices {
-    margin-top: 5px;
-    margin-left: 22px;
-  }
-
-  .choices-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    column-gap: 8px;
-    row-gap: 1px;
-  }
-
-  .choices-single {
+  .q-head {
     display: flex;
-    flex-direction: column;
-    gap: 1px;
+    gap: 5px;
+    align-items: baseline;
+    margin-bottom: 4px;
   }
-
-  .choice {
-    display: flex;
-    gap: 4px;
-    align-items: flex-start;
-    font-size: 9.5pt;
-  }
-
-  .choice-no {
-    font-weight: bold;
-    flex-shrink: 0;
-    min-width: 13px;
-  }
-
-  .choice-content { word-break: break-word; }
-
-  /* ── Answer Section ── */
-  .answer-section {
-    page-break-before: always;
-    margin-top: 4mm;
-  }
-
-  .answer-title {
+  .q-num {
     font-size: 12pt;
-    font-weight: bold;
-    text-align: center;
-    letter-spacing: 2px;
-    margin-bottom: 12px;
-    padding-bottom: 5px;
-    border-bottom: 1.5px solid #222;
+    font-weight: 700;
+    color: #1f1f1f;
+    flex-shrink: 0;
   }
-
-  .answer-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px 20px;
-    font-size: 10pt;
-  }
-
-  .answer-item .ans-no { font-weight: bold; }
-  .answer-item .ans-val { color: #c00; }
-
-  /* ── Explanations ── */
-  .explanation-section { margin-top: 18px; }
-
-  .explanation-title {
-    font-size: 12pt;
-    font-weight: bold;
-    text-align: center;
-    letter-spacing: 2px;
-    margin-bottom: 12px;
-    padding-bottom: 5px;
-    border-bottom: 1.5px solid #222;
-  }
-
-  .explanation-item {
-    margin-bottom: 10px;
-    padding: 7px 10px 7px 10px;
-    background: #f8f9fa;
-    border-left: 3px solid #667eea;
-    border-radius: 0 3px 3px 0;
-    page-break-inside: avoid;
-  }
-
-  .expl-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 3px;
-  }
-
-  .expl-no {
-    font-weight: bold;
-    font-size: 9.5pt;
-    color: #111;
-  }
-
-  .expl-ans {
-    font-weight: bold;
-    font-size: 9.5pt;
-    color: #c00;
-  }
-
-  .explanation-text {
-    color: #333;
+  .q-type {
     font-size: 9pt;
-    line-height: 1.65;
+    color: #737373;
+  }
+  .q-score {
+    margin-left: auto;
+    font-size: 10pt;
+    font-weight: 600;
+    color: #b1342a;
+    flex-shrink: 0;
+  }
+
+  .q-prompt {
+    font-size: 10pt;
+    line-height: 1.55;
+    color: #1f1f1f;
+    margin-bottom: 6px;
+    display: flex;
+    gap: 5px;
+    align-items: baseline;
     white-space: pre-wrap;
-    word-break: break-word;
-    padding-left: 2px;
+  }
+  .q-prompt .num { font-weight: 700; flex-shrink: 0; }
+  .q-prompt .text { flex: 1; }
+
+  .q-passage {
+    font-size: 9.5pt;
+    line-height: 1.65;
+    color: #262626;
+    margin: 0 0 6px 14px;
+    border: 0.5pt solid #1f1f1f;
+    padding: 5pt 8pt;
+    white-space: pre-wrap;
+  }
+
+  /* Block layout (not flex) so CSS multi-column fragmentation behaves
+     predictably — flex containers have undefined break behavior. */
+  .q-images { margin: 0 0 6px 14px; break-inside: avoid; }
+  .q-images img {
+    max-width: 100%;
+    max-height: 220px;
+    object-fit: contain;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .choices {
+    font-size: 9.5pt;
+    color: #262626;
+    padding-left: 14px;
+  }
+  .choices .choice {
+    display: block;
+    margin-bottom: 2px;
+    break-inside: avoid;
+  }
+  .choices .choice .no { font-weight: 600; margin-right: 4px; }
+
+  .answer-blank {
+    margin: 2px 0 0 14px;
+    height: 36px;
+    background:
+      repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 11px,
+        #d4d4d4 11px,
+        #d4d4d4 12px
+      );
+  }
+  .answer-blank.long { height: 56px; }
+
+  /* ── Answer sheet ── */
+  .answer-grid {
+    display: grid;
+    grid-template-columns: repeat({{ settings.columns }}, 1fr);
+    gap: 0;
+    border: 1pt solid #1f1f1f;
+  }
+  .answer-grid .row {
+    display: flex;
+    gap: 8px;
+    padding: 7px 10px;
+    border-bottom: 0.5pt solid #e5e5e5;
+    align-items: baseline;
+  }
+  .answer-grid .row .n {
+    font-weight: 700;
+    font-size: 11pt;
+    color: #1f1f1f;
+    min-width: 22px;
+  }
+  .answer-grid .row .a {
+    font-weight: 700;
+    font-size: 12pt;
+    color: #b1342a;
+    min-width: 22px;
+  }
+  .answer-grid .row .at {
+    flex: 1;
+    font-size: 9.5pt;
+    color: #525252;
+  }
+
+  /* ── Explanation sheet ── */
+  .explain-block {
+    background: #fafafa;
+    border-left: 3pt solid #b1342a;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    break-inside: avoid;
+  }
+  .explain-block .head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .explain-block .head .n {
+    font-weight: 700;
+    font-size: 11pt;
+    color: #1f1f1f;
+  }
+  .explain-block .head .meta {
+    font-size: 9pt;
+    color: #737373;
+  }
+  .explain-block .head .ans {
+    margin-left: auto;
+    font-size: 10pt;
+  }
+  .explain-block .head .ans strong { color: #b1342a; }
+  .explain-block .prompt {
+    font-size: 9.5pt;
+    color: #525252;
+    line-height: 1.55;
+    margin-bottom: 5px;
+    font-style: italic;
+    white-space: pre-wrap;
+  }
+  .explain-block .body {
+    font-size: 10pt;
+    line-height: 1.7;
+    color: #1f1f1f;
+  }
+  .explain-block .body strong { color: #b1342a; }
+
+  /* ── Watermark ── */
+  .watermark {
+    position: fixed;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-30deg);
+    font-size: 110pt;
+    font-weight: 900;
+    color: #b1342a;
+    opacity: 0.04;
+    letter-spacing: 12pt;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 0;
+  }
+
+  /* ── Footer ── */
+  .paper-footer {
+    margin-top: 16px;
+    padding-top: 8px;
+    border-top: 0.5pt solid #d4d4d4;
+    font-size: 8.5pt;
+    color: #a3a3a3;
+    text-align: center;
   }
 </style>
 </head>
 <body>
 
-{# ── Macro: render a single question ── #}
-{% macro render_q(q, num) %}
-{% set lines = q.content.split('\n') %}
-{% set stem = lines[0] %}
-{% set passage = lines[1:] | join('\n') | trim %}
-<div class="question">
-  <div class="question-stem">
-    <span class="question-no">{{ num }}.</span>
-    <span class="question-text">{{ stem }}</span>
-  </div>
+{% if settings.watermark and settings.school %}
+<div class="watermark">{{ settings.school }}</div>
+{% endif %}
 
-  {% if passage %}
-  <div class="passage-box">{{ passage }}</div>
-  {% endif %}
-
-  {% if q.choices %}
-  {% set max_len = q.choices | map(attribute='choice_no') | map('length') | max + (q.choices | map(attribute='content') | map('length') | max) %}
-  <div class="choices">
-    {% if max_len <= 24 and q.choices | length == 5 %}
-    <div class="choices-grid">
-      {% for c in q.choices %}
-      <div class="choice">
-        <span class="choice-no">{{ c.choice_no }}</span>
-        <span class="choice-content">{{ c.content }}</span>
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-    <div class="choices-single">
-      {% for c in q.choices %}
-      <div class="choice">
-        <span class="choice-no">{{ c.choice_no }}</span>
-        <span class="choice-content">{{ c.content }}</span>
-      </div>
-      {% endfor %}
-    </div>
-    {% endif %}
-  </div>
+{# ── Header ── #}
+<div class="paper-school">{% if settings.school %}● {{ settings.school }} ●{% else %}● ● ●{% endif %}</div>
+<div class="paper-title">
+  {{ settings.title or '시험지' }}
+  {% if settings.sheet_type == 'answer' %}<span class="subtitle">· 정 답 지</span>
+  {% elif settings.sheet_type == 'explain' %}<span class="subtitle">· 해 설 지</span>
   {% endif %}
 </div>
-{% endmacro %}
-
-{# ── Document Header ── #}
-<div class="doc-title">{{ settings.title }}</div>
-<div class="doc-meta">
-  {% if settings.school %}<span>{{ settings.school }}</span>
-  {% else %}<span>학교명: <span class="meta-blank wide"></span></span>{% endif %}
-
-  {% if settings.grade %}<span>{{ settings.grade }}학년</span>
-  {% else %}<span>학년: <span class="meta-blank"></span></span>{% endif %}
-
-  {% if settings.class_num %}<span>{{ settings.class_num }}반</span>
-  {% else %}<span>반: <span class="meta-blank"></span></span>{% endif %}
-
-  <span>번호: <span class="meta-blank"></span></span>
-  <span>이름: <span class="meta-blank wide"></span></span>
-
-  {% if settings.date %}<span>{{ settings.date }}</span>{% endif %}
+<div class="paper-sub">
+  {% if settings.subject %}{{ settings.subject }}{% else %}—{% endif %} ·
+  {% if settings.grade %}{{ settings.grade }}{% else %}—{% endif %} ·
+  {% if settings.date %}{{ settings.date }}{% else %}—{% endif %}
 </div>
-<hr class="doc-divider">
+<div class="paper-meta">
+  <span>제 {{ settings.session or '1' }} 교시</span>
+  <span>총 {{ questions|length }}문항 · {{ total_score }}점</span>
+  <span>이름: ________________</span>
+  <span>학번: __________</span>
+</div>
 
-{# ── 2-column Questions ── #}
-<table class="two-col-table">
-  <tr>
-    <td class="col-left">
-      {% for q in left_questions %}
-        {{ render_q(q, loop.index) }}
-      {% endfor %}
-    </td>
-    <td class="col-right">
-      {% for q in right_questions %}
-        {{ render_q(q, left_count + loop.index) }}
-      {% endfor %}
-    </td>
-  </tr>
-</table>
-
-{# ── Answer Table ── #}
-{% if settings.show_answers %}
-<div class="answer-section">
-  <div class="answer-title">◀ 정 답 ▶</div>
+{# ── Body ── #}
+{% if settings.sheet_type == 'answer' %}
   <div class="answer-grid">
     {% for q in questions %}
-    {% if q.answer %}
-    <span class="answer-item">
-      <span class="ans-no">{{ loop.index }}.</span>
-      <span class="ans-val"> {{ q.answer }}</span>
-    </span>
-    {% endif %}
+    <div class="row">
+      <span class="n">{{ loop.index }}.</span>
+      <span class="a">{{ q.answer or '—' }}</span>
+      <span class="at">{{ q.answer_text or '' }}</span>
+    </div>
     {% endfor %}
   </div>
 
-  {% if settings.show_explanation %}
-  <div class="explanation-section">
-    <div class="explanation-title">◀ 해 설 ▶</div>
-    {% for q in questions %}
-    {% if q.explanation %}
-    <div class="explanation-item">
-      <div class="expl-header">
-        <span class="expl-no">{{ loop.index }}번</span>
-        {% if q.answer %}<span class="expl-ans">정답: {{ q.answer }}</span>{% endif %}
-      </div>
-      <div class="explanation-text">{{ q.explanation }}</div>
+{% elif settings.sheet_type == 'explain' %}
+  {% for q in questions %}
+  <div class="explain-block">
+    <div class="head">
+      <span class="n">{{ loop.index }}.</span>
+      <span class="meta">{{ q.type or '—' }}</span>
+      <span class="ans">정답 <strong>{{ q.answer or '—' }}</strong></span>
     </div>
-    {% endif %}
+    {% if q.prompt %}<div class="prompt">{{ q.prompt }}</div>{% endif %}
+    <div class="body">
+      <strong>[ 풀이 ]</strong>
+      {{ q.explanation or '해설이 등록되지 않았습니다.' }}
+    </div>
+  </div>
+  {% endfor %}
+
+{% else %}
+  <div class="columns">
+    {% for q in questions %}
+    <div class="question">
+      <div class="q-prompt">
+        <span class="num">{{ loop.index }}.</span>
+        <span class="text">{{ q.prompt }}</span>
+        <span class="q-score">[{{ q.score }}점]</span>
+      </div>
+      {% if q.passage %}<div class="q-passage">{{ q.passage }}</div>{% endif %}
+      {% if q.images %}
+      <div class="q-images">
+        {% for img in q.images %}
+        <img src="{{ img.file_uri }}" alt="" />
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% if q.choices %}
+      <div class="choices">
+        {% for c in q.choices %}
+        <div class="choice">
+          <span class="no">{{ c.choice_no }}</span>
+          <span>{{ c.content }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="answer-blank{% if q.type == '서술형' %} long{% endif %}"></div>
+      {% endif %}
+    </div>
     {% endfor %}
   </div>
-  {% endif %}
-</div>
 {% endif %}
+
+<div class="paper-footer">
+  {{ settings.school or '' }}{% if settings.school %} · {% endif %}{{ settings.title or '시험지' }}
+</div>
 
 </body>
 </html>
